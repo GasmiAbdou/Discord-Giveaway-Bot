@@ -39,3 +39,21 @@ def load_giveaways():
             data = json.load(f)
         return {k: Giveaway.from_dict(v) for k, v in data.items()}
     return {}
+
+
+async def get_role(interaction, role_input):
+    try:
+        # Check if the input is a role ID
+        role = interaction.guild.get_role(int(role_input))
+        if role:
+            return role
+    except ValueError:
+        pass
+
+    # If not an ID, search by name
+    role = discord.utils.get(interaction.guild.roles, name=role_input)
+    if role:
+        return role
+
+    # If role is not found, return None
+    return None
