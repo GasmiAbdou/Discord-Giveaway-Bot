@@ -350,9 +350,12 @@ class RoleRequirementModal(discord.ui.Modal, title="Role Requirement"):
     async def on_submit(self, interaction: discord.Interaction):
         role_requirement = await get_role(interaction, self.role.value)
         if role_requirement:
-            await update_confirmation_message(interaction, role_requirement, None)
+            await update_confirmation_message(interaction, role_requirement, None, None)  # Added None for entry_limit
         else:
             await interaction.response.send_message("Couldn't find the specified role. Please try again.", ephemeral=True)
+
+
+
 
 class ServerRequirementModal(discord.ui.Modal, title="Server Requirement"):
     server = discord.ui.TextInput(label="Server ID", placeholder="Enter server ID")
@@ -361,9 +364,11 @@ class ServerRequirementModal(discord.ui.Modal, title="Server Requirement"):
         server_requirement, server_invite = await get_server(interaction, self.server.value)
         if server_requirement:
             interaction.client.temp_giveaway_data["server_invite"] = server_invite
-            await update_confirmation_message(interaction, None, server_requirement)
+            await update_confirmation_message(interaction, None, server_requirement, None)  # Added None for entry_limit
         else:
             await interaction.response.send_message("I'm not in the specified server or couldn't create an invite. Please try again.", ephemeral=True)
+
+
 
 class EntryLimitModal(discord.ui.Modal, title="Entry Limit"):
     limit = discord.ui.TextInput(label="Entry Limit", placeholder="Enter the maximum number of entries")
@@ -439,7 +444,7 @@ async def update_confirmation_message(interaction: discord.Interaction, role_req
 
 async def create_giveaway(interaction: discord.Interaction, role_requirement, server_requirement, server_invite):
     giveaway_data = interaction.client.temp_giveaway_data
-    giveaway_data["role_requirement"] = role_requirement
+    giveaway_data["role_requirement"] = role_requirement.id if role_requirement else None
     giveaway_data["server_requirement"] = server_requirement
     giveaway_data["server_invite"] = server_invite
 
@@ -560,6 +565,9 @@ class GiveawayView(discord.ui.View):
 
         if giveaway.role_requirement:
             role = interaction.guild.get_role(giveaway.role_requirement)
+            if not role:
+                await interaction.response.send_message("The required role for this giveaway no longer exists. Please contact the giveaway host.", ephemeral=True)
+                return
             if role not in interaction.user.roles:
                 await interaction.response.send_message(f"You need the {role.name} role to enter this giveaway!", ephemeral=True)
                 return
@@ -569,12 +577,13 @@ class GiveawayView(discord.ui.View):
             if not required_server:
                 await interaction.response.send_message("I couldn't verify the server requirement. Please contact the giveaway host.", ephemeral=True)
                 return
-            if interaction.user not in required_server.members:
+            if interaction.user.id not in [member.id for member in required_server.members]:
                 if giveaway.server_invite:
                     await interaction.response.send_message(f"You need to be in the required server to enter this giveaway! Join here: {giveaway.server_invite}", ephemeral=True)
                 else:
                     await interaction.response.send_message(f"You need to be in the required server to enter this giveaway!", ephemeral=True)
                 return
+
         if giveaway.entry_limit and len(giveaway.participants) >= giveaway.entry_limit:
             await interaction.response.send_message("This giveaway has reached its entry limit.", ephemeral=True)
             return
@@ -594,7 +603,7 @@ class GiveawayView(discord.ui.View):
                 break
 
         await message.edit(embed=embed)
-
+        
     @discord.ui.button(label="View Participants", style=discord.ButtonStyle.blurple, custom_id="view_participants")
     async def view_participants(self, interaction: discord.Interaction, button: discord.ui.Button):
         giveaway = active_giveaways.get(self.giveaway_id)
