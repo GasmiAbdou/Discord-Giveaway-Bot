@@ -81,13 +81,11 @@ Welcome to the Discord Giveaway Bot! This powerful and feature-rich bot allows y
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License 📄
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support 💬
 
-If you encounter any issues or have questions, please open an issue on GitHub or contact the maintainer.
+If you encounter any issues or have questions, please open an issue on GitHub or contact the maintainer. Or join the discord server [GHOSTFACE](https://discord.gg/qEjYs7sSad)
 
 ---
 
